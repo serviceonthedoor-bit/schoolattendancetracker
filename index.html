@@ -639,14 +639,17 @@ async function saveAsPDF() {
 
 // ========== INIT ==========
 document.addEventListener('DOMContentLoaded', function() {
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('attendanceDate').value = today;
-    document.getElementById('attendanceDate').addEventListener('change', checkRecords);
-    checkConnection();
+    function getLocalDate() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
     
-    fetchEnrolledData().then(() => {
-        setTimeout(checkRecords, 500);
-    });
+    const today = getLocalDate();  // ✅ This gives local date
+    document.getElementById('attendanceDate').value = today;
+    // ...
 });
 </script>
 </body>
