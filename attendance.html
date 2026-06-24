@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 Daily Attendance Tracker</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        input:focus, select:focus { outline: none; border-color: #0b5e4a; }
+        .frozen { background-color: #f3f4f6 !important; opacity: 0.7; }
+        .frozen input { background-color: #e5e7eb !important; cursor: not-allowed; }
+        .frozen .teacher-sig { background-color: #e5e7eb !important; cursor: not-allowed; }
+        .frozen-badge { background: #10b981; color: white; font-size: 10px; padding: 2px 8px; border-radius: 20px; }
+        .pending-badge { background: #f59e0b; color: white; font-size: 10px; padding: 2px 8px; border-radius: 20px; }
+        .row-save-btn { background: #0b5e4a; color: white; border: none; padding: 4px 12px; border-radius: 30px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .row-save-btn:hover { background: #1e7e6c; transform: scale(1.02); }
+        .row-save-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .school-name-display { background: white !important; color: #1e3a8a !important; border: 2px solid #1e3a8a !important; font-weight: 700; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 24px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); font-size: 14px; z-index: 999; transform: translateY(100px); opacity: 0; transition: all 0.4s ease; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: #0b5e4a; }
+        .toast.error { background: #dc2626; }
+    </style>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#0b5e4a',
+                        'secondary': '#1e7e6c',
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 min-h-screen">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+
+        <!-- Header -->
+        <div class="relative rounded-2xl overflow-hidden mb-8 shadow-lg">
+            <div class="absolute inset-0 bg-gradient-to-r from-primary to-secondary"></div>
+            <div class="relative py-8 px-6 text-center text-white">
+                <div class="inline-block bg-white/20 backdrop-blur-md rounded-full px-3 py-1 text-xs mb-2 font-medium">
+                    📋 Daily Tracker
+                </div>
+                <h1 class="text-3xl md:text-4xl font-black tracking-tight">Attendance Register</h1>
+                <p class="text-sm opacity-95 max-w-2xl mx-auto mt-1">Track daily attendance, calculate percentages, and maintain records.</p>
+            </div>
+        </div>
+
+        <!-- School Info (Non-Editable) -->
+        <div class="grid md:grid-cols-3 gap-4 mb-6">
+            <!-- School Name - HARDCODED (Non-Editable) -->
+            <div class="bg-white rounded-2xl shadow-md p-5">
+                <label class="text-sm font-medium text-gray-700 block mb-1">
+                    <i class="fas fa-school text-primary mr-1"></i> School Name
+                </label>
+                <div id="schoolNameDisplay" class="w-full p-3 school-name-display rounded-xl text-lg border">
+                    PM SHRI SHAHEED INDER GIRI GOVT HSS RAMPUR
+                </div>
+            </div>
+            <!-- Purpose (Hardcoded) -->
+            <div class="bg-white rounded-2xl shadow-md p-5">
+                <label class="text-sm font-medium text-gray-700 block mb-1">
+                    <i class="fas fa-bullseye text-primary mr-1"></i> Purpose
+                </label>
+                <div class="w-full p-3 bg-gray-50 rounded-xl text-gray-700 text-sm border border-gray-200">
+                    <strong>Daily Attendance Record</strong> — Tracking student attendance for the academic session.
+                </div>
+            </div>
+            <!-- Date -->
+            <div class="bg-white rounded-2xl shadow-md p-5">
+                <label class="text-sm font-medium text-gray-700 block mb-1">
+                    <i class="fas fa-calendar-day text-primary mr-1"></i> Date
+                </label>
+                <input type="date" id="attendanceDate" class="w-full p-3 border rounded-xl text-gray-800">
+            </div>
+        </div>
+
+        <!-- Instructions (Hardcoded) -->
+        <div class="bg-white rounded-2xl shadow-md p-5 mb-6">
+            <label class="text-sm font-medium text-gray-700 block mb-1">
+                <i class="fas fa-info-circle text-primary mr-1"></i> Instructions / Remarks
+            </label>
+            <div class="w-full p-3 bg-gray-50 rounded-xl text-gray-600 text-sm border border-gray-200">
+                <ul class="list-disc list-inside space-y-1">
+                    <li>Mark attendance for all classes daily.</li>
+                    <li>Enter total enrolled students and number present.</li>
+                    <li>Absent count and percentage will auto-calculate.</li>
+                    <li>Teacher's signature required for each class.</li>
+                    <li><span class="text-green-600 font-medium">✅ Green badge</span> = Already submitted (frozen).</li>
+                    <li><span class="text-amber-500 font-medium">⏳ Yellow badge</span> = Pending submission.</li>
+                    <li><span class="text-blue-600 font-medium">💾 Save button</span> per class to submit individually.</li>
+                    <li><span class="text-indigo-600 font-medium">📊 Totals update automatically</span> as you save each class.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Load/Refresh Button -->
+        <div class="flex justify-end mb-4">
+            <button onclick="checkExistingAttendance()" 
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-md">
+                <i class="fas fa-sync-alt mr-1"></i> Check Existing
+            </button>
+        </div>
+
+        <!-- Attendance Table -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gradient-to-r from-primary to-secondary text-white">
+                            <th class="px-3 py-3 text-left font-semibold">#</th>
+                            <th class="px-3 py-3 text-left font-semibold">Class / Section</th>
+                            <th class="px-3 py-3 text-left font-semibold">Class Teacher</th>
+                            <th class="px-3 py-3 text-center font-semibold">Enrolled</th>
+                            <th class="px-3 py-3 text-center font-semibold">Present</th>
+                            <th class="px-3 py-3 text-center font-semibold">Absent</th>
+                            <th class="px-3 py-3 text-center font-semibold">%</th>
+                            <th class="px-3 py-3 text-left font-semibold">Teacher's Signature</th>
+                            <th class="px-3 py-3 text-center font-semibold">Status</th>
+                            <th class="px-3 py-3 text-center font-semibold">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceBody">
+                        <!-- 15 rows will be generated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Summary Row - UPDATED DYNAMICALLY -->
+        <div class="bg-gradient-to-r from-blue-50 to-emerald-50 rounded-2xl shadow-md p-5 mb-6 border border-emerald-200">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+                <div>
+                    <p class="text-xs text-gray-500">Total Enrolled</p>
+                    <p id="totalEnrolled" class="text-2xl font-bold text-primary">0</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500">Total Present</p>
+                    <p id="totalPresent" class="text-2xl font-bold text-green-600">0</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500">Total Absent</p>
+                    <p id="totalAbsent" class="text-2xl font-bold text-red-500">0</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500">Overall %</p>
+                    <p id="totalPercentage" class="text-2xl font-bold text-blue-600">0%</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500">Classes Recorded</p>
+                    <p id="classesRecorded" class="text-2xl font-bold text-purple-600">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- School Head Signature -->
+        <div class="bg-white rounded-2xl shadow-md p-5 mb-6">
+            <label class="text-sm font-medium text-gray-700 block mb-1">
+                <i class="fas fa-user-tie text-primary mr-1"></i> School Head's Signature
+            </label>
+            <input type="text" id="headSignature" 
+                   placeholder="Type School Head's name or signature" 
+                   class="w-full p-3 border rounded-xl border-b-2 border-dashed border-gray-300 focus:border-primary">
+            <p class="text-[10px] text-gray-400 mt-1">(Principal / Headmaster / Headmistress)</p>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-8 pt-6 border-t border-gray-200 text-center pb-6">
+        <p class="text-gray-400 text-xs">© 2026 | Attendance Tracker</p>
+    </footer>
+
+    <script>
+        // ========== CONFIGURATION ==========
+        const SCHOOL_NAME = 'PM SHRI SHAHEED INDER GIRI GOVT HSS RAMPUR';
+
+        // 👇 REPLACE WITH YOUR GOOGLE APPS SCRIPT URL
+        const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzntMGuQ0N54zM4bXBrTlp_nztRrHYCNMpfMdvjIifKRKF9KxB1opufAsBIQcxWDQL-/exec';
+
+        // ========== CLASS DATA ==========
+        const classData = [
+            { name: 'Nursery', teacher: '' },
+            { name: 'LKG', teacher: '' },
+            { name: 'UKG', teacher: '' },
+            { name: 'Class I', teacher: '' },
+            { name: 'Class II', teacher: '' },
+            { name: 'Class III', teacher: '' },
+            { name: 'Class IV', teacher: '' },
+            { name: 'Class V', teacher: '' },
+            { name: 'Class VI', teacher: '' },
+            { name: 'Class VII', teacher: '' },
+            { name: 'Class VIII', teacher: '' },
+            { name: 'Class IX', teacher: '' },
+            { name: 'Class X', teacher: '' },
+            { name: 'Class XI', teacher: '' },
+            { name: 'Class XII', teacher: '' }
+        ];
+
+        // ========== SET CURRENT DATE ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('attendanceDate').value = today;
+            updateSummary();
+        });
+
+        // ========== TOAST NOTIFICATION ==========
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            // Force reflow
+            void toast.offsetWidth;
+            toast.classList.add('show');
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // ========== BUILD TABLE ROWS ==========
+        const attendanceBody = document.getElementById('attendanceBody');
+
+        classData.forEach((cls, index) => {
+            const row = document.createElement('tr');
+            row.className = 'border-b border-gray-100 hover:bg-gray-50 transition';
+            row.dataset.class = cls.name;
+            row.dataset.saved = 'false';
+            row.innerHTML = `
+                <td class="px-3 py-2 text-gray-500 font-medium text-center">${index + 1}</td>
+                <td class="px-3 py-2 font-medium text-gray-700">${cls.name}</td>
+                <td class="px-3 py-2">
+                    <input type="text" class="class-teacher w-28 p-1 border rounded-lg text-sm" placeholder="Teacher name" value="${cls.teacher}">
+                </td>
+                <td class="px-3 py-2 text-center">
+                    <input type="number" class="enrolled w-14 p-1 text-center border rounded-lg text-sm" value="40" min="0">
+                </td>
+                <td class="px-3 py-2 text-center">
+                    <input type="number" class="present w-14 p-1 text-center border rounded-lg text-sm text-green-700" value="0" min="0" oninput="calculateRow(this)">
+                </td>
+                <td class="px-3 py-2 text-center">
+                    <input type="number" class="absent w-14 p-1 text-center border rounded-lg text-sm text-red-500" value="0" min="0" readonly>
+                </td>
+                <td class="px-3 py-2 text-center font-semibold percentage text-blue-600">0%</td>
+                <td class="px-3 py-2">
+                    <input type="text" class="teacher-sig w-28 p-1 border rounded-lg text-sm" placeholder="Signature">
+                </td>
+                <td class="px-3 py-2 text-center">
+                    <span class="pending-badge">⏳ Pending</span>
+                </td>
+                <td class="px-3 py-2 text-center">
+                    <button class="row-save-btn" onclick="saveSingleRow(this)"><i class="fas fa-save mr-1"></i> Save</button>
+                </td>
+            `;
+            attendanceBody.appendChild(row);
+        });
+
+        // ========== CALCULATE ROW PERCENTAGE ==========
+        function calculateRow(input) {
+            const row = input.closest('tr');
+            const enrolled = parseInt(row.querySelector('.enrolled').value) || 0;
+            const present = parseInt(row.querySelector('.present').value) || 0;
+            const absent = Math.max(0, enrolled - present);
+            const percentage = enrolled > 0 ? Math.round((present / enrolled) * 100) : 0;
+
+            row.querySelector('.absent').value = absent;
+            row.querySelector('.percentage').textContent = percentage + '%';
+            updateSummary();
+        }
+
+        // ========== UPDATE SUMMARY (ONLY FROZEN/SAVED ROWS) ==========
+        function updateSummary() {
+            const rows = document.querySelectorAll('#attendanceBody tr');
+            let totalEnrolled = 0, totalPresent = 0, totalAbsent = 0, recorded = 0;
+
+            rows.forEach(row => {
+                // Only count frozen (saved) rows
+                if (row.classList.contains('frozen')) {
+                    const enrolled = parseInt(row.querySelector('.enrolled').value) || 0;
+                    const present = parseInt(row.querySelector('.present').value) || 0;
+                    if (enrolled > 0) recorded++;
+                    totalEnrolled += enrolled;
+                    totalPresent += present;
+                    totalAbsent += (enrolled - present);
+                }
+            });
+
+            document.getElementById('totalEnrolled').textContent = totalEnrolled;
+            document.getElementById('totalPresent').textContent = totalPresent;
+            document.getElementById('totalAbsent').textContent = totalAbsent;
+            document.getElementById('classesRecorded').textContent = recorded;
+
+            const overall = totalEnrolled > 0 ? Math.round((totalPresent / totalEnrolled) * 100) : 0;
+            document.getElementById('totalPercentage').textContent = overall + '%';
+        }
+
+        // ========== SAVE SINGLE ROW ==========
+        async function saveSingleRow(btn) {
+            const row = btn.closest('tr');
+            const className = row.dataset.class;
+            
+            // Check if already frozen
+            if (row.classList.contains('frozen')) {
+                showToast(`⚠️ ${className} already submitted.`, 'error');
+                return;
+            }
+
+            const date = document.getElementById('attendanceDate').value;
+            if (!date) {
+                showToast('Please select a date first.', 'error');
+                return;
+            }
+
+            const headSig = document.getElementById('headSignature').value || '';
+            const classTeacher = row.querySelector('.class-teacher').value || '';
+            const enrolled = parseInt(row.querySelector('.enrolled').value) || 0;
+            const present = parseInt(row.querySelector('.present').value) || 0;
+            const absent = parseInt(row.querySelector('.absent').value) || 0;
+            const percentage = row.querySelector('.percentage').textContent;
+            const teacherSig = row.querySelector('.teacher-sig').value || '';
+
+            if (enrolled === 0) {
+                showToast(`⚠️ Enrolled count for ${className} is 0.`, 'error');
+                return;
+            }
+
+            // Disable button and show saving
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saving';
+
+            const payload = {
+                school: SCHOOL_NAME,
+                date: date,
+                headSignature: headSig,
+                class: className,
+                classTeacher: classTeacher,
+                enrolled: enrolled,
+                present: present,
+                absent: absent,
+                percentage: percentage,
+                teacherSignature: teacherSig,
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                const response = await fetch(SHEETS_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                // Check if response is ok
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error: ${response.status} - ${errorText}`);
+                }
+                
+                const result = await response.text();
+                console.log('Server response:', result);
+
+                if (result === 'Success' || result.includes('Success')) {
+                    // Freeze the row
+                    row.classList.add('frozen');
+                    row.querySelectorAll('input').forEach(input => input.disabled = true);
+                    const badge = row.querySelector('.pending-badge');
+                    badge.textContent = '✅ Submitted';
+                    badge.className = 'frozen-badge';
+                    row.dataset.saved = 'true';
+                    btn.innerHTML = '<i class="fas fa-check mr-1"></i> Done';
+                    btn.disabled = true;
+                    
+                    showToast(`✅ ${className} saved successfully!`, 'success');
+                    
+                    // Update summary - ONLY saved rows now count
+                    updateSummary();
+                } else {
+                    showToast(`❌ Error: ${result}`, 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-save mr-1"></i> Save';
+                }
+            } catch (error) {
+                console.error('Save error:', error);
+                showToast(`❌ Network error: ${error.message}`, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save mr-1"></i> Save';
+            }
+        }
+
+        // ========== CHECK EXISTING ATTENDANCE ==========
+        async function checkExistingAttendance() {
+            const date = document.getElementById('attendanceDate').value;
+            if (!date) {
+                showToast('Please select a date first.', 'error');
+                return;
+            }
+
+            showToast('⏳ Checking records...', 'success');
+
+            try {
+                const url = `${SHEETS_URL}?action=get&date=${date}`;
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+
+                // Reset all rows to editable
+                document.querySelectorAll('#attendanceBody tr').forEach(row => {
+                    row.classList.remove('frozen');
+                    row.querySelectorAll('input').forEach(input => input.disabled = false);
+                    row.querySelector('.pending-badge').textContent = '⏳ Pending';
+                    row.querySelector('.pending-badge').className = 'pending-badge';
+                    const saveBtn = row.querySelector('.row-save-btn');
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="fas fa-save mr-1"></i> Save';
+                });
+
+                if (data && data.length > 0) {
+                    data.forEach(entry => {
+                        const row = document.querySelector(`#attendanceBody tr[data-class="${entry.Class}"]`);
+                        if (row) {
+                            row.classList.add('frozen');
+                            row.querySelectorAll('input').forEach(input => input.disabled = true);
+                            row.querySelector('.pending-badge').textContent = '✅ Submitted';
+                            row.querySelector('.pending-badge').className = 'frozen-badge';
+                            const saveBtn = row.querySelector('.row-save-btn');
+                            saveBtn.disabled = true;
+                            saveBtn.innerHTML = '<i class="fas fa-check mr-1"></i> Done';
+                        }
+                    });
+
+                    showToast(`✅ Found ${data.length} existing records.`, 'success');
+                } else {
+                    showToast(`📝 No records found for ${date}.`, 'success');
+                }
+
+                updateSummary();
+
+            } catch (error) {
+                console.error('Check error:', error);
+                showToast(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // ========== AUTO-CHECK ON DATE CHANGE ==========
+        document.getElementById('attendanceDate').addEventListener('change', function() {
+            checkExistingAttendance();
+        });
+
+        // ========== INIT ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-check for today
+            setTimeout(checkExistingAttendance, 500);
+        });
+    </script>
+
+</body>
+</html>
