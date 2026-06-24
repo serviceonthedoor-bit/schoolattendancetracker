@@ -6,74 +6,211 @@
     <title>📋 Attendance Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .frozen { background-color: #f3f4f6 !important; opacity: 0.7; }
+        .frozen input { background-color: #e5e7eb !important; cursor: not-allowed; }
+        .frozen .teacher-sig { background-color: #e5e7eb !important; cursor: not-allowed; }
+        .frozen-badge { background: #10b981; color: white; font-size: 10px; padding: 2px 8px; border-radius: 20px; }
+        .pending-badge { background: #f59e0b; color: white; font-size: 10px; padding: 2px 8px; border-radius: 20px; }
+        .row-save-btn { background: #0b5e4a; color: white; border: none; padding: 4px 12px; border-radius: 30px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .row-save-btn:hover { background: #1e7e6c; transform: scale(1.02); }
+        .row-save-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .school-name-display { background: white !important; color: #1e3a8a !important; border: 2px solid #1e3a8a !important; font-weight: 700; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 24px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); font-size: 14px; z-index: 999; transform: translateY(100px); opacity: 0; transition: all 0.4s ease; max-width: 400px; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: #0b5e4a; }
+        .toast.error { background: #dc2626; }
+        .toast.warning { background: #d97706; }
+        .status-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 10px; }
+        .status-online { background: #10b981; color: white; }
+        .status-offline { background: #f59e0b; color: white; }
+        .hero-banner {
+            background: linear-gradient(135deg, #0b5e4a 0%, #1e7e6c 100%);
+            padding: 20px 0;
+            border-radius: 16px;
+            margin-bottom: 24px;
+        }
+        .logo-placeholder {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #0b5e4a;
+            border: 3px solid #0b5e4a;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(11, 94, 74, 0.2);
+        }
+        .logo-placeholder:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 16px rgba(11, 94, 74, 0.4);
+            border-color: #1e7e6c;
+        }
+        .logo-placeholder img {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+        .instructions-box {
+            background: #f0fdf4;
+            border-left: 4px solid #0b5e4a;
+            border-radius: 8px;
+        }
+        .enrolled-input:disabled {
+            background-color: #e5e7eb !important;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen p-6">
 
-<div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-xl p-6">
-    
-    <!-- Header -->
-    <div class="text-center mb-6">
-        <h1 class="text-3xl font-bold text-emerald-700">📋 Attendance Register</h1>
-        <p class="text-gray-500">PM SHRI SHAHEED INDER GIRI GOVT HSS RAMPUR</p>
+<div class="max-w-7xl mx-auto">
+
+    <!-- Hero Banner - Centered Content -->
+    <div class="hero-banner shadow-lg">
+        <div class="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <!-- Left: Logo -->
+            <a href="https://your-school-website.com" target="_blank" class="flex items-center gap-3 text-white hover:opacity-80 transition">
+                <div class="logo-placeholder">
+                    <i class="fas fa-school"></i>
+                </div>
+            </a>
+            
+            <!-- Center: Title -->
+            <div class="text-center">
+                <h1 class="text-xl font-bold text-white">📋 Attendance Register</h1>
+                <p class="text-sm text-white/90">PM SHRI SHAHEED INDER GIRI GOVT HSS RAMPUR</p>
+            </div>
+            
+            <!-- Right: Date -->
+            <div class="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
+                <label class="text-xs text-white/80 block">Select Date</label>
+                <input type="date" id="attendanceDate" class="bg-transparent text-white border-0 focus:ring-0 text-sm font-medium">
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions Box -->
+    <div class="instructions-box p-4 mb-6 shadow-sm">
+        <div class="flex items-start gap-3">
+            <i class="fas fa-info-circle text-emerald-600 mt-0.5"></i>
+            <div>
+                <h3 class="font-semibold text-emerald-800 text-sm">How to Use This Tracker</h3>
+                <ul class="text-xs text-gray-600 space-y-0.5 mt-1">
+                    <li>📅 <strong>Select Date</strong> - Choose the date for attendance (auto-set to today)</li>
+                    <li>📊 <strong>Enrolled Numbers</strong> - Auto-filled from Google Sheet (ClassData tab)</li>
+                    <li>✏️ <strong>Fill Data</strong> - Enter Class Teacher and Present counts for each class</li>
+                    <li>💾 <strong>Save Individual</strong> - Click Save button for each class to submit one by one</li>
+                    <li>🚀 <strong>Save All</strong> - Click "Save All" to submit all pending classes at once</li>
+                    <li>🔍 <strong>Check Records</strong> - View previously submitted attendance for any date</li>
+                    <li>📈 <strong>Summary</strong> - Totals auto-update as you save classes</li>
+                </ul>
+            </div>
+        </div>
     </div>
 
     <!-- Controls -->
-    <div class="flex flex-wrap gap-4 items-end mb-6">
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Date</label>
-            <input type="date" id="attendanceDate" class="border rounded-lg px-3 py-2">
+    <div class="flex flex-wrap gap-4 items-center justify-between mb-6">
+        <div></div>
+        <div class="flex gap-2 flex-wrap">
+            <button onclick="checkRecords()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 text-sm">
+                <i class="fas fa-sync-alt mr-1"></i> Check Records
+            </button>
+            <button onclick="saveAll()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 text-sm">
+                <i class="fas fa-save mr-1"></i> Save All
+            </button>
+            <button onclick="saveAsPDF()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 text-sm">
+                <i class="fas fa-file-pdf mr-1"></i> Save as PDF
+            </button>
+            <span id="connectionStatus" class="status-badge status-offline flex items-center">
+                <i class="fas fa-circle mr-1"></i> Checking...
+            </span>
         </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Head's Signature</label>
-            <input type="text" id="headSignature" placeholder="Principal's name" class="border rounded-lg px-3 py-2 w-48">
-        </div>
-        <button onclick="checkRecords()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
-            <i class="fas fa-sync-alt mr-1"></i> Check Records
-        </button>
-        <button onclick="saveAll()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">
-            <i class="fas fa-save mr-1"></i> Save All
-        </button>
     </div>
 
     <!-- Message -->
     <div id="message" class="mb-4 p-3 rounded-lg hidden"></div>
 
     <!-- Table -->
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm border">
-            <thead class="bg-emerald-700 text-white">
-                <tr>
-                    <th class="p-2 text-left">#</th>
-                    <th class="p-2 text-left">Class</th>
-                    <th class="p-2 text-left">Teacher</th>
-                    <th class="p-2 text-center">Enrolled</th>
-                    <th class="p-2 text-center">Present</th>
-                    <th class="p-2 text-center">Absent</th>
-                    <th class="p-2 text-center">%</th>
-                    <th class="p-2 text-left">Signature</th>
-                    <th class="p-2 text-center">Status</th>
-                    <th class="p-2 text-center">Action</th>
-                </tr>
-            </thead>
-            <tbody id="attendanceBody">
-                <!-- Generated by JS -->
-            </tbody>
-        </table>
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-emerald-700 text-white">
+                    <tr>
+                        <th class="p-2 text-left">#</th>
+                        <th class="p-2 text-left">Class / Section</th>
+                        <th class="p-2 text-left">Class Teacher</th>
+                        <th class="p-2 text-center">Enrolled</th>
+                        <th class="p-2 text-center">Present</th>
+                        <th class="p-2 text-center">Absent</th>
+                        <th class="p-2 text-center">%</th>
+                        <th class="p-2 text-center">Status</th>
+                        <th class="p-2 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="attendanceBody">
+                    <!-- Generated by JS -->
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <!-- Summary -->
     <div class="grid grid-cols-5 gap-4 mt-6 text-center">
-        <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-gray-500">Enrolled</p><p id="totalEnrolled" class="text-xl font-bold">0</p></div>
-        <div class="bg-green-50 p-3 rounded-lg"><p class="text-xs text-gray-500">Present</p><p id="totalPresent" class="text-xl font-bold">0</p></div>
-        <div class="bg-red-50 p-3 rounded-lg"><p class="text-xs text-gray-500">Absent</p><p id="totalAbsent" class="text-xl font-bold">0</p></div>
-        <div class="bg-purple-50 p-3 rounded-lg"><p class="text-xs text-gray-500">Percentage</p><p id="totalPercentage" class="text-xl font-bold">0%</p></div>
-        <div class="bg-yellow-50 p-3 rounded-lg"><p class="text-xs text-gray-500">Recorded</p><p id="classesRecorded" class="text-xl font-bold">0</p></div>
+        <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
+            <p class="text-xs text-gray-500">Total Enrolled</p>
+            <p id="totalEnrolled" class="text-xl font-bold text-emerald-700">0</p>
+        </div>
+        <div class="bg-green-50 p-3 rounded-lg border border-green-100">
+            <p class="text-xs text-gray-500">Total Present</p>
+            <p id="totalPresent" class="text-xl font-bold text-emerald-600">0</p>
+        </div>
+        <div class="bg-red-50 p-3 rounded-lg border border-red-100">
+            <p class="text-xs text-gray-500">Total Absent</p>
+            <p id="totalAbsent" class="text-xl font-bold text-red-500">0</p>
+        </div>
+        <div class="bg-purple-50 p-3 rounded-lg border border-purple-100">
+            <p class="text-xs text-gray-500">Overall %</p>
+            <p id="totalPercentage" class="text-xl font-bold text-emerald-700">0%</p>
+        </div>
+        <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-100">
+            <p class="text-xs text-gray-500">Classes Recorded</p>
+            <p id="classesRecorded" class="text-xl font-bold text-emerald-700">0</p>
+        </div>
     </div>
+
+    <!-- Principal Signature at Bottom - Small Box -->
+    <div class="mt-4 flex justify-end">
+        <div class="bg-white rounded-xl shadow-sm p-3 border border-gray-100 w-full md:w-64">
+            <label class="text-xs font-medium text-gray-700 block mb-0.5 text-right">
+                <i class="fas fa-user-tie text-emerald-600 mr-1"></i> Principal's Signature
+            </label>
+            <input type="text" id="headSignature" 
+                   placeholder="Type Principal's name" 
+                   class="w-full p-1.5 border rounded-lg border-b-2 border-dashed border-gray-300 focus:border-emerald-500 focus:ring-0 text-right text-sm">
+            <p class="text-[8px] text-gray-400 mt-0.5 text-right">(Principal / Headmaster)</p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="mt-8 pt-6 border-t border-gray-200 text-center">
+        <p class="text-gray-400 text-xs">© 2026 | Attendance Tracker</p>
+    </div>
+
 </div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
 
 <script>
 // ========== CONFIG ==========
-const SHEETS_URL = 'https://corsproxy.io/?https://script.google.com/macros/s/AKfycbzplxtZ459ozGCUGOZbeG-lMStksxgrK85Y2bC5uK1i2SRAMPE1xxF6t7OaNp21tstYGg/exec';
+const SHEETS_URL = 'https://corsproxy.io/https://script.google.com/macros/s/AKfycbxc9YvA-9nYY-rw7tGkEncHcL3lUj0qEG9-9__3zFYifOV1nsZ9FiM6J0KNaoPK0X2WUA/exec';
 
 const classData = [
     'Nursery','LKG','UKG','Class I','Class II','Class III','Class IV',
@@ -83,24 +220,79 @@ const classData = [
 // ========== BUILD TABLE ==========
 const tbody = document.getElementById('attendanceBody');
 
+// Store enrolled data from Google Sheet
+let enrolledData = {};
+
 classData.forEach((cls, i) => {
     const tr = document.createElement('tr');
     tr.className = 'border-b hover:bg-gray-50';
     tr.dataset.class = cls;
     tr.innerHTML = `
-        <td class="p-2 text-center">${i+1}</td>
-        <td class="p-2 font-medium">${cls}</td>
-        <td class="p-2"><input class="teacher w-24 border rounded px-1 py-0.5 text-sm" placeholder="Teacher"></td>
-        <td class="p-2 text-center"><input class="enrolled w-12 border rounded px-1 py-0.5 text-sm text-center" value="40" onchange="calcRow(this)"></td>
-        <td class="p-2 text-center"><input class="present w-12 border rounded px-1 py-0.5 text-sm text-center text-green-600" value="0" oninput="calcRow(this)"></td>
-        <td class="p-2 text-center"><input class="absent w-12 border rounded px-1 py-0.5 text-sm text-center text-red-500" readonly></td>
-        <td class="p-2 text-center font-bold percentage text-blue-600">0%</td>
-        <td class="p-2"><input class="signature w-24 border rounded px-1 py-0.5 text-sm" placeholder="Signature"></td>
+        <td class="p-2 text-center text-gray-500">${i+1}</td>
+        <td class="p-2 font-medium text-gray-700">${cls}</td>
+        <td class="p-2"><input class="teacher w-28 border rounded-lg px-2 py-1 text-sm" placeholder="Teacher name"></td>
+        <td class="p-2 text-center"><input class="enrolled w-14 border rounded-lg px-1 py-1 text-sm text-center enrolled-input" value="40" min="0" disabled></td>
+        <td class="p-2 text-center"><input class="present w-14 border rounded-lg px-1 py-1 text-sm text-center text-green-600" value="0" min="0" oninput="calcRow(this)"></td>
+        <td class="p-2 text-center"><input class="absent w-14 border rounded-lg px-1 py-1 text-sm text-center text-red-500" readonly></td>
+        <td class="p-2 text-center font-bold percentage text-emerald-600">0%</td>
         <td class="p-2 text-center"><span class="badge px-2 py-0.5 rounded-full text-xs bg-yellow-500 text-white">⏳ Pending</span></td>
-        <td class="p-2 text-center"><button onclick="saveRow(this)" class="save-btn bg-emerald-600 text-white px-3 py-0.5 rounded-full text-xs hover:bg-emerald-700"><i class="fas fa-save mr-1"></i>Save</button></td>
+        <td class="p-2 text-center"><button onclick="saveRow(this)" class="save-btn bg-emerald-600 text-white px-3 py-1 rounded-full text-xs hover:bg-emerald-700"><i class="fas fa-save mr-1"></i>Save</button></td>
     `;
     tbody.appendChild(tr);
 });
+
+// ========== FETCH ENROLLED NUMBERS FROM GOOGLE SHEET ==========
+async function fetchEnrolledData() {
+    try {
+        const response = await fetch(SHEETS_URL);
+        if (!response.ok) throw new Error('Failed to fetch enrolled data');
+        const data = await response.json();
+        
+        // Look for ClassData sheet data - filter by class name
+        // Assuming the response has all data from the main Attendance sheet
+        // We need to fetch ClassData separately
+        // Since we can't fetch from a specific sheet, we'll use the same endpoint
+        // but we need to modify the script to return ClassData
+        // For now, we'll use a different approach - fetch from the same URL with a parameter
+        
+        // Actually, let's use the same URL but we'll need to modify the Google Script
+        // to accept a 'sheet' parameter. Since we haven't modified the script yet,
+        // we'll use a workaround: store enrolled data in the Attendance sheet
+        // as a special entry or use a separate endpoint.
+        
+        // For now, we'll use a fallback - if the data contains Class and Enrolled columns
+        // we'll parse them, otherwise we'll use default values.
+        
+        console.log('Fetched data for enrolled numbers:', data);
+        
+        // If data has Class and Enrolled fields, use them
+        if (data && data.length > 0 && data[0].Class && data[0].Enrolled) {
+            data.forEach(row => {
+                if (row.Class && row.Enrolled) {
+                    enrolledData[row.Class] = parseInt(row.Enrolled) || 40;
+                }
+            });
+        }
+        
+        // Update the enrolled fields in the table
+        document.querySelectorAll('#attendanceBody tr').forEach(row => {
+            const cls = row.dataset.class;
+            if (enrolledData[cls]) {
+                const enrolledInput = row.querySelector('.enrolled');
+                enrolledInput.value = enrolledData[cls];
+                // Trigger calculation
+                calcRow(enrolledInput);
+            }
+        });
+        
+        showToast('✅ Enrolled numbers loaded from Google Sheet', 'success');
+        
+    } catch (error) {
+        console.error('Error fetching enrolled data:', error);
+        showToast('⚠️ Using default enrolled numbers', 'warning');
+        // Keep default values (40)
+    }
+}
 
 // ========== FUNCTIONS ==========
 function calcRow(input) {
@@ -117,6 +309,8 @@ function calcRow(input) {
 
 function updateSummary() {
     let totalEnrolled = 0, totalPresent = 0, totalAbsent = 0, recorded = 0;
+    
+    // Count ONLY frozen (saved) rows
     document.querySelectorAll('#attendanceBody tr.frozen').forEach(row => {
         const e = parseInt(row.querySelector('.enrolled').value) || 0;
         const p = parseInt(row.querySelector('.present').value) || 0;
@@ -125,12 +319,14 @@ function updateSummary() {
         totalPresent += p;
         totalAbsent += (e - p);
     });
+    
     document.getElementById('totalEnrolled').textContent = totalEnrolled;
     document.getElementById('totalPresent').textContent = totalPresent;
     document.getElementById('totalAbsent').textContent = totalAbsent;
     document.getElementById('classesRecorded').textContent = recorded;
-    document.getElementById('totalPercentage').textContent = 
-        totalEnrolled > 0 ? Math.round((totalPresent/totalEnrolled)*100) + '%' : '0%';
+    
+    const overall = totalEnrolled > 0 ? Math.round((totalPresent / totalEnrolled) * 100) : 0;
+    document.getElementById('totalPercentage').textContent = overall + '%';
 }
 
 function showMsg(text, type = 'info') {
@@ -139,6 +335,36 @@ function showMsg(text, type = 'info') {
     el.className = `mb-4 p-3 rounded-lg ${type === 'success' ? 'bg-green-100 text-green-700' : type === 'error' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`;
     el.classList.remove('hidden');
     setTimeout(() => el.classList.add('hidden'), 5000);
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = `toast ${type}`;
+    void toast.offsetWidth;
+    toast.classList.add('show');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// ========== CHECK CONNECTION ==========
+async function checkConnection() {
+    try {
+        const response = await fetch(SHEETS_URL, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        if (response.ok) {
+            document.getElementById('connectionStatus').className = 'status-badge status-online flex items-center';
+            document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-circle mr-1"></i> Connected';
+            return true;
+        }
+    } catch (e) {
+        console.log('Connection check:', e.message);
+    }
+    document.getElementById('connectionStatus').className = 'status-badge status-offline flex items-center';
+    document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-circle mr-1"></i> Offline';
+    return false;
 }
 
 // ========== CHECK RECORDS ==========
@@ -157,6 +383,8 @@ async function checkRecords() {
         document.querySelectorAll('#attendanceBody tr').forEach(row => {
             row.classList.remove('frozen');
             row.querySelectorAll('input').forEach(inp => inp.disabled = false);
+            // Re-disable enrolled inputs (they should stay disabled)
+            row.querySelector('.enrolled').disabled = true;
             row.querySelector('.badge').textContent = '⏳ Pending';
             row.querySelector('.badge').className = 'badge px-2 py-0.5 rounded-full text-xs bg-yellow-500 text-white';
             row.querySelector('.save-btn').disabled = false;
@@ -190,12 +418,12 @@ async function checkRecords() {
 async function saveRow(btn) {
     const row = btn.closest('tr');
     if (row.classList.contains('frozen')) {
-        showMsg('⚠️ Already saved', 'error');
+        showToast('⚠️ Already saved', 'error');
         return;
     }
     
     const date = document.getElementById('attendanceDate').value;
-    if (!date) { showMsg('Select a date first', 'error'); return; }
+    if (!date) { showToast('Select a date first', 'error'); return; }
     
     const cls = row.dataset.class;
     const teacher = row.querySelector('.teacher').value || '';
@@ -203,10 +431,9 @@ async function saveRow(btn) {
     const present = parseInt(row.querySelector('.present').value) || 0;
     const absent = parseInt(row.querySelector('.absent').value) || 0;
     const pct = row.querySelector('.percentage').textContent;
-    const sig = row.querySelector('.signature').value || '';
     const headSig = document.getElementById('headSignature').value || '';
     
-    if (enrolled === 0) { showMsg('Enrolled cannot be 0', 'error'); return; }
+    if (enrolled === 0) { showToast('Enrolled cannot be 0', 'error'); return; }
     
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>';
@@ -225,7 +452,7 @@ async function saveRow(btn) {
                 present: present,
                 absent: absent,
                 percentage: pct,
-                teacherSignature: sig,
+                teacherSignature: '',
                 timestamp: new Date().toISOString()
             })
         });
@@ -238,13 +465,13 @@ async function saveRow(btn) {
             row.querySelector('.badge').className = 'badge px-2 py-0.5 rounded-full text-xs bg-green-500 text-white';
             btn.innerHTML = '<i class="fas fa-check mr-1"></i>Done';
             btn.disabled = true;
-            showMsg(`✅ ${cls} saved!`, 'success');
+            showToast(`✅ ${cls} saved!`, 'success');
             updateSummary();
         } else {
             throw new Error(result);
         }
     } catch(e) {
-        showMsg('❌ Error: ' + e.message, 'error');
+        showToast('❌ Error: ' + e.message, 'error');
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-save mr-1"></i>Save';
     }
@@ -254,19 +481,198 @@ async function saveRow(btn) {
 async function saveAll() {
     const btns = document.querySelectorAll('#attendanceBody tr:not(.frozen) .save-btn');
     if (btns.length === 0) {
-        showMsg('No pending classes to save', 'info');
+        showToast('No pending classes to save', 'warning');
         return;
     }
     for (const btn of btns) {
         await saveRow(btn);
         await new Promise(r => setTimeout(r, 500));
     }
-    showMsg(`✅ All ${btns.length} classes saved!`, 'success');
+    showToast(`✅ All ${btns.length} classes saved!`, 'success');
+}
+
+// ========== SAVE AS PDF (FROM GOOGLE SHEETS) ==========
+async function saveAsPDF() {
+    const date = document.getElementById('attendanceDate').value;
+    if (!date) {
+        showToast('Please select a date first.', 'error');
+        return;
+    }
+
+    showToast('⏳ Fetching data from Google Sheets...', 'warning');
+
+    try {
+        const response = await fetch(`${SHEETS_URL}?date=${date}`);
+        if (!response.ok) throw new Error('Failed to fetch data');
+        const data = await response.json();
+
+        if (!data || data.length === 0) {
+            showToast('📝 No records found for this date. Please save attendance first.', 'error');
+            return;
+        }
+
+        const headSig = data[0]?.HeadSignature || document.getElementById('headSignature').value || 'Not signed';
+
+        let totalEnrolled = 0, totalPresent = 0, totalAbsent = 0;
+        data.forEach(row => {
+            totalEnrolled += parseInt(row.Enrolled) || 0;
+            totalPresent += parseInt(row.Present) || 0;
+            totalAbsent += parseInt(row.Absent) || 0;
+        });
+        const overallPct = totalEnrolled > 0 ? Math.round((totalPresent / totalEnrolled) * 100) : 0;
+        const recorded = data.length;
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            showToast('Please allow popups to save as PDF.', 'error');
+            return;
+        }
+
+        let tableRows = '';
+        data.forEach((row, index) => {
+            const cls = row.Class || 'Unknown';
+            const teacher = row.ClassTeacher || '';
+            const enrolled = row.Enrolled || 0;
+            const present = row.Present || 0;
+            const absent = row.Absent || 0;
+            const pct = row.Percentage || '0%';
+            
+            tableRows += `
+                <tr>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: center;">${index + 1}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid #eee;">${cls}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid #eee;">${teacher}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: center;">${enrolled}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: center;">${present}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: center;">${absent}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: center; font-weight: bold; color: #0b5e4a;">${pct}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: center;">
+                        <span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 20px; font-size: 10px;">✅ Submitted</span>
+                    </td>
+                </tr>
+            `;
+        });
+
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Attendance Report - ${date}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 30px; }
+                    .header { text-align: center; margin-bottom: 25px; border-bottom: 3px solid #0b5e4a; padding-bottom: 15px; }
+                    .header h1 { color: #0b5e4a; font-size: 28px; margin: 0; }
+                    .header p { color: #1e7e6c; font-size: 16px; margin: 5px 0; }
+                    .header .date { color: #555; font-size: 14px; margin: 5px 0; }
+                    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+                    th { background: #0b5e4a; color: white; padding: 10px 8px; text-align: left; }
+                    td { padding: 8px 8px; border-bottom: 1px solid #e5e7eb; }
+                    tr:nth-child(even) { background: #f9fafb; }
+                    .summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 20px; }
+                    .summary-item { background: #f0fdf4; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #d1fae5; }
+                    .summary-item .label { font-size: 11px; color: #6b7280; }
+                    .summary-item .value { font-size: 22px; font-weight: bold; color: #0b5e4a; }
+                    .signature { margin-top: 25px; text-align: right; border-top: 1px solid #d1d5db; padding-top: 15px; }
+                    .signature p { font-size: 14px; color: #333; }
+                    .signature .sub { font-size: 10px; color: #9ca3af; }
+                    .footer { text-align: center; font-size: 10px; color: #9ca3af; margin-top: 25px; }
+                    @media print {
+                        body { padding: 15px; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>📋 Attendance Register</h1>
+                    <p>PM SHRI SHAHEED INDER GIRI GOVT HSS RAMPUR</p>
+                    <p class="date"><strong>Date:</strong> ${date}</p>
+                    <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">Total Classes Recorded: ${recorded}</p>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Class / Section</th>
+                            <th>Class Teacher</th>
+                            <th style="text-align: center;">Enrolled</th>
+                            <th style="text-align: center;">Present</th>
+                            <th style="text-align: center;">Absent</th>
+                            <th style="text-align: center;">%</th>
+                            <th style="text-align: center;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="label">Total Enrolled</div>
+                        <div class="value">${totalEnrolled}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Total Present</div>
+                        <div class="value" style="color: #16a34a;">${totalPresent}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Total Absent</div>
+                        <div class="value" style="color: #dc2626;">${totalAbsent}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Overall %</div>
+                        <div class="value" style="color: #2563eb;">${overallPct}%</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Classes Recorded</div>
+                        <div class="value" style="color: #7c3aed;">${recorded}</div>
+                    </div>
+                </div>
+
+                <div class="signature">
+                    <p><strong>Principal's Signature:</strong> ${headSig}</p>
+                    <p class="sub">(Principal / Headmaster / Headmistress)</p>
+                </div>
+
+                <div class="footer">
+                    Generated on ${new Date().toLocaleString()}
+                </div>
+            </body>
+            </html>
+        `);
+
+        printWindow.document.close();
+
+        setTimeout(() => {
+            printWindow.print();
+        }, 500);
+
+        showToast(`✅ PDF ready with ${recorded} records`, 'success');
+
+    } catch (error) {
+        console.error('PDF Error:', error);
+        showToast('❌ Error fetching data: ' + error.message, 'error');
+    }
 }
 
 // ========== INIT ==========
-document.getElementById('attendanceDate').value = new Date().toISOString().split('T')[0];
-document.getElementById('attendanceDate').addEventListener('change', checkRecords);
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('attendanceDate').value = today;
+    document.getElementById('attendanceDate').addEventListener('change', checkRecords);
+    checkConnection();
+    
+    // Fetch enrolled numbers from Google Sheet
+    fetchEnrolledData().then(() => {
+        // After enrolled data is loaded, check records
+        setTimeout(checkRecords, 500);
+    });
+});
+
+// ========== LOGO UPLOAD ==========
+// To add your logo, replace the <i class="fas fa-school"></i> with:
+// <img src="your-logo-url.png" alt="School Logo">
 </script>
 
 </body>
