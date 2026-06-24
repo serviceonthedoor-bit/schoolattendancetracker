@@ -244,31 +244,25 @@ classData.forEach((cls, i) => {
 // ========== FETCH ENROLLED NUMBERS FROM GOOGLE SHEET ==========
 async function fetchEnrolledData() {
     try {
-        // ✅ Fetch from ClassData sheet using the 'sheet' parameter
         const response = await fetch(`${SHEETS_URL}?sheet=ClassData`);
         if (!response.ok) throw new Error('Failed to fetch enrolled data');
         const data = await response.json();
         
         console.log('Enrolled data from ClassData:', data);
         
-        // If we got data, use it
         if (data && data.length > 0) {
-            // Clear existing enrolled data
             enrolledData = {};
-            
             data.forEach(row => {
                 if (row.Class && row.Enrolled) {
                     enrolledData[row.Class] = parseInt(row.Enrolled) || 40;
                 }
             });
             
-            // Update the enrolled fields in the table
             document.querySelectorAll('#attendanceBody tr').forEach(row => {
                 const cls = row.dataset.class;
                 if (enrolledData[cls]) {
                     const enrolledInput = row.querySelector('.enrolled');
                     enrolledInput.value = enrolledData[cls];
-                    // Trigger calculation
                     calcRow(enrolledInput);
                 }
             });
@@ -281,25 +275,6 @@ async function fetchEnrolledData() {
     } catch (error) {
         console.error('Error fetching enrolled data:', error);
         showToast('⚠️ Using default enrolled numbers', 'warning');
-    }
-}        
-        // Update the enrolled fields in the table
-        document.querySelectorAll('#attendanceBody tr').forEach(row => {
-            const cls = row.dataset.class;
-            if (enrolledData[cls]) {
-                const enrolledInput = row.querySelector('.enrolled');
-                enrolledInput.value = enrolledData[cls];
-                // Trigger calculation
-                calcRow(enrolledInput);
-            }
-        });
-        
-        showToast('✅ Enrolled numbers loaded from Google Sheet', 'success');
-        
-    } catch (error) {
-        console.error('Error fetching enrolled data:', error);
-        showToast('⚠️ Using default enrolled numbers', 'warning');
-        // Keep default values (40)
     }
 }
 
@@ -319,7 +294,6 @@ function calcRow(input) {
 function updateSummary() {
     let totalEnrolled = 0, totalPresent = 0, totalAbsent = 0, recorded = 0;
     
-    // Count ONLY frozen (saved) rows
     document.querySelectorAll('#attendanceBody tr.frozen').forEach(row => {
         const e = parseInt(row.querySelector('.enrolled').value) || 0;
         const p = parseInt(row.querySelector('.present').value) || 0;
@@ -388,11 +362,9 @@ async function checkRecords() {
         if (!res.ok) throw new Error('Server error');
         const data = await res.json();
         
-        // Reset all rows
         document.querySelectorAll('#attendanceBody tr').forEach(row => {
             row.classList.remove('frozen');
             row.querySelectorAll('input').forEach(inp => inp.disabled = false);
-            // Re-disable enrolled inputs (they should stay disabled)
             row.querySelector('.enrolled').disabled = true;
             row.querySelector('.badge').textContent = '⏳ Pending';
             row.querySelector('.badge').className = 'badge px-2 py-0.5 rounded-full text-xs bg-yellow-500 text-white';
@@ -672,17 +644,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('attendanceDate').addEventListener('change', checkRecords);
     checkConnection();
     
-    // Fetch enrolled numbers from Google Sheet
     fetchEnrolledData().then(() => {
-        // After enrolled data is loaded, check records
         setTimeout(checkRecords, 500);
     });
 });
-
-// ========== LOGO UPLOAD ==========
-// To add your logo, replace the <i class="fas fa-school"></i> with:
-// <img src="your-logo-url.png" alt="School Logo">
 </script>
-
 </body>
 </html>
