@@ -210,7 +210,7 @@
 
 <script>
 // ========== CONFIG ==========
-const SHEETS_URL = 'https://corsproxy.io/https://script.google.com/macros/s/AKfycbxc9YvA-9nYY-rw7tGkEncHcL3lUj0qEG9-9__3zFYifOV1nsZ9FiM6J0KNaoPK0X2WUA/exec';
+const SHEETS_URL = 'https://corsproxy.io/https://script.google.com/macros/s/AKfycbz9ZWjfb3LB56X18yKj8LUqpfq-kh0XpPg2TLkfRDoQs8T8HKPAZ0TXsHbRmkOGz2E7oQ/exec';
 
 const classData = [
     'Nursery','LKG','UKG','Class I','Class II','Class III','Class IV',
@@ -244,36 +244,45 @@ classData.forEach((cls, i) => {
 // ========== FETCH ENROLLED NUMBERS FROM GOOGLE SHEET ==========
 async function fetchEnrolledData() {
     try {
-        const response = await fetch(SHEETS_URL);
+        // ✅ Fetch from ClassData sheet using the 'sheet' parameter
+        const response = await fetch(`${SHEETS_URL}?sheet=ClassData`);
         if (!response.ok) throw new Error('Failed to fetch enrolled data');
         const data = await response.json();
         
-        // Look for ClassData sheet data - filter by class name
-        // Assuming the response has all data from the main Attendance sheet
-        // We need to fetch ClassData separately
-        // Since we can't fetch from a specific sheet, we'll use the same endpoint
-        // but we need to modify the script to return ClassData
-        // For now, we'll use a different approach - fetch from the same URL with a parameter
+        console.log('Enrolled data from ClassData:', data);
         
-        // Actually, let's use the same URL but we'll need to modify the Google Script
-        // to accept a 'sheet' parameter. Since we haven't modified the script yet,
-        // we'll use a workaround: store enrolled data in the Attendance sheet
-        // as a special entry or use a separate endpoint.
-        
-        // For now, we'll use a fallback - if the data contains Class and Enrolled columns
-        // we'll parse them, otherwise we'll use default values.
-        
-        console.log('Fetched data for enrolled numbers:', data);
-        
-        // If data has Class and Enrolled fields, use them
-        if (data && data.length > 0 && data[0].Class && data[0].Enrolled) {
+        // If we got data, use it
+        if (data && data.length > 0) {
+            // Clear existing enrolled data
+            enrolledData = {};
+            
             data.forEach(row => {
                 if (row.Class && row.Enrolled) {
                     enrolledData[row.Class] = parseInt(row.Enrolled) || 40;
                 }
             });
+            
+            // Update the enrolled fields in the table
+            document.querySelectorAll('#attendanceBody tr').forEach(row => {
+                const cls = row.dataset.class;
+                if (enrolledData[cls]) {
+                    const enrolledInput = row.querySelector('.enrolled');
+                    enrolledInput.value = enrolledData[cls];
+                    // Trigger calculation
+                    calcRow(enrolledInput);
+                }
+            });
+            
+            showToast('✅ Enrolled numbers loaded from Google Sheet', 'success');
+        } else {
+            showToast('⚠️ No enrolled data found. Using defaults.', 'warning');
         }
         
+    } catch (error) {
+        console.error('Error fetching enrolled data:', error);
+        showToast('⚠️ Using default enrolled numbers', 'warning');
+    }
+}        
         // Update the enrolled fields in the table
         document.querySelectorAll('#attendanceBody tr').forEach(row => {
             const cls = row.dataset.class;
