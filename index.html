@@ -231,7 +231,7 @@ classData.forEach((cls, i) => {
         <td class="p-2 text-center text-gray-500">${i+1}</td>
         <td class="p-2 font-medium text-gray-700">${cls}</td>
         <td class="p-2"><input class="teacher w-28 border rounded-lg px-2 py-1 text-sm" placeholder="Teacher name"></td>
-        <td class="p-2 text-center"><input class="enrolled w-14 border rounded-lg px-1 py-1 text-sm text-center enrolled-input" value="40" min="0" disabled></td>
+        <td class="p-2 text-center"><input class="enrolled w-14 border rounded-lg px-1 py-1 text-sm text-center" value="40" min="0"></td>
         <td class="p-2 text-center"><input class="present w-14 border rounded-lg px-1 py-1 text-sm text-center text-green-600" value="0" min="0" oninput="calcRow(this)"></td>
         <td class="p-2 text-center"><input class="absent w-14 border rounded-lg px-1 py-1 text-sm text-center text-red-500" readonly></td>
         <td class="p-2 text-center font-bold percentage text-emerald-600">0%</td>
@@ -380,7 +380,7 @@ async function checkRecords() {
         document.querySelectorAll('#attendanceBody tr').forEach(row => {
             row.classList.remove('frozen');
             row.querySelectorAll('input').forEach(inp => inp.disabled = false);
-            row.querySelector('.enrolled').disabled = true;
+            row.querySelector('.enrolled').disabled = false;
             row.querySelector('.badge').textContent = '⏳ Pending';
             row.querySelector('.badge').className = 'badge px-2 py-0.5 rounded-full text-xs bg-yellow-500 text-white';
             row.querySelector('.save-btn').disabled = false;
